@@ -4,9 +4,11 @@ const calls = new Map();
 const DEFAULT_SYSTEM_PROMPT = `You are a helpful phone assistant. Keep your responses short and conversational — 1 to 2 sentences max. You are speaking on a phone call, so be natural and concise. Do not use markdown, lists, or special formatting.`;
 
 export const callStore = {
-  create(callSid, { systemPrompt } = {}) {
+  create(callSid, { systemPrompt, guardEnabled = false, userId = null } = {}) {
     const entry = {
       status: 'initiated',
+      guardEnabled,
+      userId,
       transcript: [],
       messages: [
         { role: 'system', content: systemPrompt || DEFAULT_SYSTEM_PROMPT },

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { WebSocketServer } from 'ws';
 import { router as apiRoutes } from './routes/api.js';
 import callRoutes from './routes/calls.js';
+import userCallRoutes from './routes/userCalls.js';
 import { callStore } from './callStore.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -27,6 +28,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // API routes
+app.use('/api/user/calls', userCallRoutes);
 app.use('/api/calls', callRoutes);
 app.use('/api', apiRoutes);
 

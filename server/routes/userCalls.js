@@ -1,0 +1,88 @@
+import express from 'express';
+import twilio from 'twilio';
+import { callStore } from '../callStore.js';
+import { authMiddleware } from '../middleware/auth.js';
+
+const router = express.Router();
+
+const client = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
+
+// POST /api/user/calls - Start a guarded outbound call with a goal
+router.post('/', authMiddleware, async (req, res) => {
+  const { to, goal } = req.body;
+  if (!to) return res.status(400).json({ error: '"to" phone number is required' });
+  if (!goal) return res.status(400).json({ error: '"goal" is required' });
+
+  const baseUrl = process.env.BASE_URL;
+  if (!baseUrl) return res.status(500).json({ error: 'BASE_URL not configured' });
+
+  const systemPrompt = [
+    `You are a phone assistant making an outbound call on behalf of the user.`,
+    `Your goal: ${goal}`,
+    `Keep responses short and conversational — 1 to 2 sentences max.`,
+    `Be natural, polite, and stay focused on the goal.`,
+    `Do not use markdown, lists, or special formatting.`,
+  ].join('\n');
+
+  const greeting = `Hello! I'm calling regarding: ${goal}`;
+
+  try {
+    const call = await client.calls.create({
+      to,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      url: `${baseUrl}/api/calls/twiml/connect?greeting=${encodeURIComponent(greeting)}`,
+      statusCallback: `${baseUrl}/api/calls/status`,
+      statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
+    });
+
+    callStore.create(call.sid, {
+      systemPrompt,
+      guardEnabled: true,
+      userId: req.user.id,
+    });
+
+    res.status(201).json({
+      callSid: call.sid,
+      status: 'initiated',
+      goal,
+      guardEnabled: true,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/user/calls/:callSid - Get call state (auth required, owner only)
+router.get('/:callSid', authMiddleware, (req, res) => {
+  const entry = callStore.get(req.params.callSid);
+  if (!entry) return res.status(404).json({ error: 'Call not found' });
+  if (entry.userId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+
+  res.json({
+    callSid: req.params.callSid,
+    status: entry.status,
+    transcript: entry.transcript,
+    guardEnabled: entry.guardEnabled,
+    startedAt: entry.startedAt,
+    endedAt: entry.endedAt,
+  });
+});
+
+// POST /api/user/calls/:callSid/hangup - End the call (auth required, owner only)
+router.post('/:callSid/hangup', authMiddleware, async (req, res) => {
+  const entry = callStore.get(req.params.callSid);
+  if (!entry) return res.status(404).json({ error: 'Call not found' });
+  if (entry.userId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+
+  try {
+    await client.calls(req.params.callSid).update({ status: 'completed' });
+    res.json({ status: 'ended' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+export default router;

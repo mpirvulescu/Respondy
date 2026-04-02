@@ -2,6 +2,7 @@ import express from 'express';
 import twilio from 'twilio';
 import { callStore } from '../callStore.js';
 import { chatCompletion } from '../llm.js';
+import { checkInjection } from '../middleware/promptGuard.js';
 
 const router = express.Router();
 
@@ -85,13 +86,29 @@ router.post('/gather', async (req, res) => {
     entry.addTranscript('caller', SpeechResult);
     console.log(`[caller] "${SpeechResult}" (confidence: ${Confidence})`);
 
+    // Check for prompt injection if guard is enabled
+    if (entry.guardEnabled) {
+      const check = await checkInjection(SpeechResult);
+      console.log(`[guard] label=${check.label} score=${check.score}`);
+
+      if (check.injection) {
+        entry.addTranscript('assistant', 'Prompt injection detected. Ending call.');
+        console.log('[guard] INJECTION DETECTED — ending call');
+
+        const twiml = new twilio.twiml.VoiceResponse();
+        twiml.say({ voice: 'Polly.Amy' }, 'I have detected a prompt injection attempt. This call will now end. Goodbye.');
+        twiml.hangup();
+
+        res.type('text/xml');
+        return res.send(twiml.toString());
+      }
+    }
+
     try {
-      // Call Groq LLM with the full conversation
       const reply = await chatCompletion(entry.messages);
       entry.addTranscript('assistant', reply);
       console.log(`[assistant] "${reply}"`);
 
-      // Speak the LLM response, then listen again
       const twiml = new twilio.twiml.VoiceResponse();
       twiml.say({ voice: 'Polly.Amy' }, reply);
       twiml.gather({

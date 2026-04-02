@@ -45,5 +45,21 @@ export function promptGuard(fields = ['name']) {
   };
 }
 
+// Returns { injection: boolean, score: number } for a given text
+export async function checkInjection(text) {
+  try {
+    const classifier = await PromptInjectionGuard.getInstance();
+    const [result] = await classifier(text);
+    return {
+      injection: result.label === 'INJECTION' && result.score > 0.9,
+      label: result.label,
+      score: result.score,
+    };
+  } catch (err) {
+    console.error('checkInjection error:', err.message);
+    return { injection: false, label: 'ERROR', score: 0 };
+  }
+}
+
 // Start loading the model at import time
 PromptInjectionGuard.getInstance().catch(() => {});
