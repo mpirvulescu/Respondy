@@ -1,18 +1,20 @@
-import sql from "sql.js";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import initSqlJs from 'sql.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const DB_PATH = join(import.meta.dirname, '..', 'database.db');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DB_PATH = path.join(__dirname, '..', 'database.db');
 
 let db;
 
 export async function getDb() {
   if (db) return db;
 
-  const SQL = await sql();
+  const SQL = await initSqlJs();
 
-  if (existsSync(DB_PATH)) {
-    const buffer = readFileSync(DB_PATH);
+  if (fs.existsSync(DB_PATH)) {
+    const buffer = fs.readFileSync(DB_PATH);
     db = new SQL.Database(buffer);
   } else {
     db = new SQL.Database();
@@ -35,6 +37,6 @@ export function save() {
   if (db) {
     const data = db.export();
     const buffer = Buffer.from(data);
-    writeFileSync(DB_PATH, buffer);
+    fs.writeFileSync(DB_PATH, buffer);
   }
 }

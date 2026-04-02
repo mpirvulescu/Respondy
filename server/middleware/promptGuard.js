@@ -1,10 +1,9 @@
-import { pipeline } from "@huggingface/transformers";
-
-export class PromptInjectionGuard {
+class PromptInjectionGuard {
   static instance = null;
 
   static async getInstance() {
     if (this.instance === null) {
+      const { pipeline } = await import('@huggingface/transformers');
       this.instance = await pipeline(
         'text-classification',
         'ProtectAI/deberta-v3-base-prompt-injection-v2',
@@ -46,4 +45,5 @@ export function promptGuard(fields = ['name']) {
   };
 }
 
-PromptInjectionGuard.getInstance().catch(() => { });
+// Start loading the model at import time
+PromptInjectionGuard.getInstance().catch(() => {});
