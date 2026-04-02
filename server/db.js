@@ -24,14 +24,22 @@ export async function getDb() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
+    );
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      password TEXT NOT NULL,
+      quota INTEGER NOT NULL DEFAULT 20,
+      role TEXT NOT NULL DEFAULT 'user'
+    );
   `);
 
-  save();
+  saveDb();
   return db;
 }
 
-export function save() {
+export function saveDb() {
   if (db) {
     const data = db.export();
     const buffer = Buffer.from(data);
