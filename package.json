@@ -4,9 +4,9 @@
    "private": true,
    "scripts": {
       "build": "pnpm --filter client build",
-      "dev": "concurrently \"pnpm --filter server dev\" \"pnpm --filter client dev\"",
+      "dev": "concurrently \"pnpm --filter server start\" \"pnpm --filter client dev\"",
       "dev:client": "pnpm --filter client dev",
-      "dev:server": "pnpm --filter server dev",
+      "dev:server": "pnpm --filter server start",
       "start": "pnpm --filter server start"
    },
    "devDependencies": {
