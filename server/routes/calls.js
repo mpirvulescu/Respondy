@@ -1,6 +1,7 @@
 import express from 'express';
 import twilio from 'twilio';
 import { callStore } from '../callStore.js';
+import { chatCompletion } from '../llm.js';
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ const client = twilio(
 
 // POST /api/calls - Start an outbound call
 router.post('/', async (req, res) => {
-  const { to, greeting } = req.body;
+  const { to, greeting, systemPrompt } = req.body;
   if (!to) return res.status(400).json({ error: '"to" phone number is required' });
 
   const baseUrl = process.env.BASE_URL;
@@ -26,7 +27,7 @@ router.post('/', async (req, res) => {
       statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
     });
 
-    callStore.create(call.sid);
+    callStore.create(call.sid, { systemPrompt });
 
     res.status(201).json({ callSid: call.sid, status: 'initiated' });
   } catch (err) {
@@ -40,22 +41,17 @@ router.post('/twiml/connect', (req, res) => {
   const greeting = req.query.greeting || req.body.greeting || 'Hello!';
   const callSid = req.body.CallSid;
 
-  // Log greeting as assistant transcript
   const entry = callStore.get(callSid);
   if (entry) entry.addTranscript('assistant', greeting);
 
   const twiml = new twilio.twiml.VoiceResponse();
   twiml.say({ voice: 'Polly.Amy' }, greeting);
-
-  // Listen for caller speech via <Gather>
-  const gather = twiml.gather({
+  twiml.gather({
     input: 'speech',
     action: `${baseUrl}/api/calls/gather`,
     speechTimeout: 'auto',
     language: 'en-US',
   });
-
-  // If no speech detected, keep the call alive and listen again
   twiml.redirect(`${baseUrl}/api/calls/twiml/listen`);
 
   res.type('text/xml');
@@ -66,33 +62,54 @@ router.post('/twiml/connect', (req, res) => {
 router.post('/twiml/listen', (req, res) => {
   const baseUrl = process.env.BASE_URL;
   const twiml = new twilio.twiml.VoiceResponse();
-
-  const gather = twiml.gather({
+  twiml.gather({
     input: 'speech',
     action: `${baseUrl}/api/calls/gather`,
     speechTimeout: 'auto',
     language: 'en-US',
   });
-
-  // If no speech, loop back and keep listening
   twiml.redirect(`${baseUrl}/api/calls/twiml/listen`);
 
   res.type('text/xml');
   res.send(twiml.toString());
 });
 
-// POST /api/calls/gather - Twilio sends caller's speech here
-router.post('/gather', (req, res) => {
+// POST /api/calls/gather - Twilio sends caller's speech, we call the LLM and respond
+router.post('/gather', async (req, res) => {
   const { CallSid, SpeechResult, Confidence } = req.body;
   const baseUrl = process.env.BASE_URL;
 
   const entry = callStore.get(CallSid);
+
   if (entry && SpeechResult) {
     entry.addTranscript('caller', SpeechResult);
-    console.log(`[transcript] caller: "${SpeechResult}" (confidence: ${Confidence})`);
+    console.log(`[caller] "${SpeechResult}" (confidence: ${Confidence})`);
+
+    try {
+      // Call Groq LLM with the full conversation
+      const reply = await chatCompletion(entry.messages);
+      entry.addTranscript('assistant', reply);
+      console.log(`[assistant] "${reply}"`);
+
+      // Speak the LLM response, then listen again
+      const twiml = new twilio.twiml.VoiceResponse();
+      twiml.say({ voice: 'Polly.Amy' }, reply);
+      twiml.gather({
+        input: 'speech',
+        action: `${baseUrl}/api/calls/gather`,
+        speechTimeout: 'auto',
+        language: 'en-US',
+      });
+      twiml.redirect(`${baseUrl}/api/calls/twiml/listen`);
+
+      res.type('text/xml');
+      return res.send(twiml.toString());
+    } catch (err) {
+      console.error('[llm error]', err.message);
+    }
   }
 
-  // After capturing speech, keep listening
+  // Fallback: if LLM fails or no speech, keep listening
   const twiml = new twilio.twiml.VoiceResponse();
   twiml.redirect(`${baseUrl}/api/calls/twiml/listen`);
 
@@ -127,7 +144,7 @@ router.get('/:callSid', (req, res) => {
   });
 });
 
-// POST /api/calls/:callSid/say - Speak words to the caller
+// POST /api/calls/:callSid/say - Manually speak words (overrides LLM)
 router.post('/:callSid/say', async (req, res) => {
   const { text, voice } = req.body;
   if (!text) return res.status(400).json({ error: '"text" is required' });
@@ -138,17 +155,14 @@ router.post('/:callSid/say', async (req, res) => {
   try {
     const baseUrl = process.env.BASE_URL;
 
-    // Update the call: say the text, then go back to listening
     const twiml = new twilio.twiml.VoiceResponse();
     twiml.say({ voice: voice || 'Polly.Amy' }, text);
-
-    const gather = twiml.gather({
+    twiml.gather({
       input: 'speech',
       action: `${baseUrl}/api/calls/gather`,
       speechTimeout: 'auto',
       language: 'en-US',
     });
-
     twiml.redirect(`${baseUrl}/api/calls/twiml/listen`);
 
     await client.calls(req.params.callSid).update({
