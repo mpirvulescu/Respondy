@@ -1,8 +1,13 @@
 import express from 'express';
 import twilio from 'twilio';
 import { callStore } from '../callStore.js';
+import { authMiddleware } from "../middleware/auth.js"
 
 const router = express.Router();
+
+function decrementQuota(db, userId) {
+  db.run('UPDATE users SET quota = quota - 1 WHERE id = ?', [userId]);
+}
 
 const client = twilio(
   process.env.TWILIO_ACCOUNT_SID,
@@ -10,7 +15,7 @@ const client = twilio(
 );
 
 // POST /api/calls - Start an outbound call
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   const { to, greeting } = req.body;
   if (!to) return res.status(400).json({ error: '"to" phone number is required' });
 
@@ -28,6 +33,10 @@ router.post('/', async (req, res) => {
 
     callStore.create(call.sid);
 
+    const db = await getDb();
+    decrementQuota(db, req.user.id);
+    saveDb();
+
     res.status(201).json({ callSid: call.sid, status: 'initiated' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -35,7 +44,7 @@ router.post('/', async (req, res) => {
 });
 
 // POST /api/calls/twiml/connect - TwiML: greet then listen
-router.post('/twiml/connect', (req, res) => {
+router.post('/twiml/connect', authMiddleware, (req, res) => {
   const baseUrl = process.env.BASE_URL;
   const greeting = req.query.greeting || req.body.greeting || 'Hello!';
   const callSid = req.body.CallSid;
@@ -63,7 +72,7 @@ router.post('/twiml/connect', (req, res) => {
 });
 
 // POST /api/calls/twiml/listen - TwiML: just listen (no greeting)
-router.post('/twiml/listen', (req, res) => {
+router.post('/twiml/listen', authMiddleware, (req, res) => {
   const baseUrl = process.env.BASE_URL;
   const twiml = new twilio.twiml.VoiceResponse();
 
@@ -82,7 +91,7 @@ router.post('/twiml/listen', (req, res) => {
 });
 
 // POST /api/calls/gather - Twilio sends caller's speech here
-router.post('/gather', (req, res) => {
+router.post('/gather', authMiddleware, (req, res) => {
   const { CallSid, SpeechResult, Confidence } = req.body;
   const baseUrl = process.env.BASE_URL;
 
@@ -101,7 +110,7 @@ router.post('/gather', (req, res) => {
 });
 
 // POST /api/calls/status - Twilio status callback
-router.post('/status', (req, res) => {
+router.post('/status', authMiddleware, (req, res) => {
   const { CallSid, CallStatus } = req.body;
   const entry = callStore.get(CallSid);
   if (entry) {
@@ -114,7 +123,7 @@ router.post('/status', (req, res) => {
 });
 
 // GET /api/calls/:callSid - Get call state and transcript
-router.get('/:callSid', (req, res) => {
+router.get('/:callSid', authMiddleware, (req, res) => {
   const entry = callStore.get(req.params.callSid);
   if (!entry) return res.status(404).json({ error: 'Call not found' });
 
@@ -128,7 +137,7 @@ router.get('/:callSid', (req, res) => {
 });
 
 // POST /api/calls/:callSid/say - Speak words to the caller
-router.post('/:callSid/say', async (req, res) => {
+router.post('/:callSid/say', authMiddleware, async (req, res) => {
   const { text, voice } = req.body;
   if (!text) return res.status(400).json({ error: '"text" is required' });
 
@@ -164,7 +173,7 @@ router.post('/:callSid/say', async (req, res) => {
 });
 
 // POST /api/calls/:callSid/hangup - End the call
-router.post('/:callSid/hangup', async (req, res) => {
+router.post('/:callSid/hangup', authMiddleware, async (req, res) => {
   try {
     await client.calls(req.params.callSid).update({ status: 'completed' });
     res.json({ status: 'ended' });
