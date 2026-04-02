@@ -12,16 +12,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3001;
+let CLIENT_ORIGIN = process.env.CLIENT_ORIGIN;
+if(CLIENT_ORIGIN === undefined) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error("CLIENT_ORIGIN environment variable is required in production");
+  } else {
+    console.warn("Warning: CLIENT_ORIGIN is not set. Using default origin for development.");
+    CLIENT_ORIGIN = `http://localhost:${PORT}`;
+  }
+}
 
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? false
-    : [
-        'http://localhost:5173',
-        /\.trycloudflare\.com$/,
-      ],
-  credentials: true,
-}));
+app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
