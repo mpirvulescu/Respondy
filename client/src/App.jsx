@@ -1,5 +1,5 @@
 import { AuthProvider, useAuth } from './context/authContext';
-import AuthPage                  from './pages/AuthPage';
+import AuthPage                  from './pages/authPage';
 import UserDashboard             from './components/dashboard/UserDashboard';
 import AdminDashboard            from './components/dashboard/AdminDashboard';
 
