@@ -2,6 +2,8 @@ import express from 'express';
 import twilio from 'twilio';
 import { callStore } from '../callStore.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { chatCompletion } from '../llm.js';
+import { getDb, saveDb } from '../db.js';
 
 const router = express.Router();
 
@@ -9,6 +11,10 @@ const client = twilio(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN
 );
+
+function decrementQuota(db, userId) {
+  db.run('UPDATE users SET quota = quota - 1 WHERE id = ?', [userId]);
+}
 
 // POST /api/user/calls - Start a guarded outbound call with a goal
 router.post('/', authMiddleware, async (req, res) => {
@@ -20,34 +26,49 @@ router.post('/', authMiddleware, async (req, res) => {
   if (!baseUrl) return res.status(500).json({ error: 'BASE_URL not configured' });
 
   const systemPrompt = [
-    `You are a phone assistant making an outbound call on behalf of the user.`,
+    'You are a phone assistant making an outbound call on behalf of the user.',
     `Your goal: ${goal}`,
-    `Keep responses short and conversational — 1 to 2 sentences max.`,
-    `Be natural, polite, and stay focused on the goal.`,
-    `Do not use markdown, lists, or special formatting.`,
+    'Keep responses short and conversational — 1 to 2 sentences max.',
+    'Be natural, polite, and stay focused on the goal.',
+    'Do not use markdown, lists, or special formatting.',
+    'Your first message will be spoken as the greeting when the call is answered.',
   ].join('\n');
 
-  const greeting = `Hello! I'm calling regarding: ${goal}`;
-
   try {
-    const call = await client.calls.create({
-      to,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      url: `${baseUrl}/api/calls/twiml/connect?greeting=${encodeURIComponent(greeting)}`,
-      statusCallback: `${baseUrl}/api/calls/status`,
-      statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
-    });
+    // Step 1 & 2 in parallel: get Groq greeting + initiate Twilio call
+    const [greeting, call] = await Promise.all([
+      chatCompletion(
+        [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: 'The call is starting. Introduce yourself and state your purpose briefly.' },
+        ],
+      ),
+      client.calls.create({
+        to,
+        from: process.env.TWILIO_PHONE_NUMBER,
+        url: `${baseUrl}/api/calls/twiml/connect`,
+        statusCallback: `${baseUrl}/api/calls/status`,
+        statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
+      }),
+    ]);
 
+    // Create call entry with the Groq-generated greeting stored for the TwiML webhook to use
     callStore.create(call.sid, {
       systemPrompt,
       guardEnabled: true,
       userId: req.user.id,
+      greeting,
     });
+
+    const db = await getDb();
+    decrementQuota(db, req.user.id);
+    saveDb();
 
     res.status(201).json({
       callSid: call.sid,
       status: 'initiated',
       goal,
+      greeting,
       guardEnabled: true,
     });
   } catch (err) {
