@@ -14,8 +14,8 @@
 //
 //   POST /api/user/calls
 //     Headers: Authorization: Bearer <token>
-//     Body:    { phoneNumber: string, goal: string }
-//     Success: { call: { id, phone_number, goal, transcript, outcome, created_at } }
+//     Body:    { to: string, goal: string }
+//     Success: { callSid, status, goal, guardEnabled }
 //
 //   GET /api/admin/stats
 //     Headers: Authorization: Bearer <token>
@@ -55,11 +55,11 @@ export async function fetchUserCalls(token) {
   return data;
 }
 
-export async function initiateCall(token, { phoneNumber, goal }) {
+export async function initiateCall(token, { to, goal }) {
   const res = await fetch(`${BASE_URL}/user/calls`, {
     method: 'POST',
     headers: authHeaders(token),
-    body: JSON.stringify({ phoneNumber, goal }),
+    body: JSON.stringify({ to, goal }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Failed to initiate call');

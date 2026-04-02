@@ -7,7 +7,7 @@ export default function UserDashboard() {
 
   const [stats, setStats]     = useState({ apiCallsUsed: 0, apiCallsLimit: 20 });
   const [calls, setCalls]     = useState([]);
-  const [phone, setPhone]     = useState('');
+  const [to, setTo]           = useState('');
   const [goal, setGoal]       = useState('');
   const [error, setError]     = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,17 +19,17 @@ export default function UserDashboard() {
 
   const handleCall = async (e) => {
     e.preventDefault();
-    if (!phone.trim() || !goal.trim()) {
+    if (!to.trim() || !goal.trim()) {
       setError('Phone number and goal are required');
       return;
     }
     setLoading(true);
     setError('');
     try {
-      const data = await initiateCall(token, { phoneNumber: phone, goal });
-      setCalls((prev) => [data.call, ...prev]);
+      const data = await initiateCall(token, { to, goal });
+      setCalls((prev) => [data, ...prev]);
       setStats((prev) => ({ ...prev, apiCallsUsed: prev.apiCallsUsed + 1 }));
-      setPhone('');
+      setTo('');
       setGoal('');
     } catch (err) {
       setError(err.message || 'Call failed');
@@ -57,8 +57,8 @@ export default function UserDashboard() {
         <form className="dashboard__form" onSubmit={handleCall}>
           <label className="dashboard__label">
             Phone number
-            <input className="dashboard__input" type="tel" value={phone}
-              onChange={(e) => { setPhone(e.target.value); setError(''); }}
+            <input className="dashboard__input" type="tel" value={to}
+              onChange={(e) => { setTo(e.target.value); setError(''); }}
               placeholder="+1 555 123 4567" />
           </label>
           <label className="dashboard__label">
