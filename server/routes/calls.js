@@ -1,22 +1,23 @@
 import express from 'express';
 import twilio from 'twilio';
 import { callStore } from '../callStore.js';
-import { authMiddleware } from "../middleware/auth.js"
+import { authMiddleware } from '../middleware/auth.js';
 import { chatCompletion } from '../llm.js';
 import { checkInjection } from '../middleware/promptGuard.js';
+import { getDb, saveDb } from '../db.js';
 
 const router = express.Router();
-
-function decrementQuota(db, userId) {
-  db.run('UPDATE users SET quota = quota - 1 WHERE id = ?', [userId]);
-}
 
 const client = twilio(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN
 );
 
-// POST /api/calls - Start an outbound call
+function decrementQuota(db, userId) {
+  db.run('UPDATE users SET quota = quota - 1 WHERE id = ?', [userId]);
+}
+
+// POST /api/calls - Start an outbound call (no guard, no Groq greeting)
 router.post('/', authMiddleware, async (req, res) => {
   const { to, greeting, systemPrompt } = req.body;
   if (!to) return res.status(400).json({ error: '"to" phone number is required' });
@@ -28,12 +29,16 @@ router.post('/', authMiddleware, async (req, res) => {
     const call = await client.calls.create({
       to,
       from: process.env.TWILIO_PHONE_NUMBER,
-      url: `${baseUrl}/api/calls/twiml/connect?greeting=${encodeURIComponent(greeting || 'Hello! How can I help you today?')}`,
+      url: `${baseUrl}/api/calls/twiml/connect`,
       statusCallback: `${baseUrl}/api/calls/status`,
       statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
     });
 
-    callStore.create(call.sid, { systemPrompt });
+    callStore.create(call.sid, {
+      systemPrompt,
+      greeting: greeting || 'Hello! How can I help you today?',
+      userId: req.user.id,
+    });
 
     const db = await getDb();
     decrementQuota(db, req.user.id);
@@ -45,13 +50,17 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
+// --- Twilio webhooks (NO auth — called by Twilio servers) ---
+
 // POST /api/calls/twiml/connect - TwiML: greet then listen
-router.post('/twiml/connect', authMiddleware, (req, res) => {
+router.post('/twiml/connect', (req, res) => {
   const baseUrl = process.env.BASE_URL;
-  const greeting = req.query.greeting || req.body.greeting || 'Hello!';
   const callSid = req.body.CallSid;
 
+  // Use stored greeting from callStore (set by /api/calls or /api/user/calls)
   const entry = callStore.get(callSid);
+  const greeting = entry?.greeting || req.query.greeting || 'Hello!';
+
   if (entry) entry.addTranscript('assistant', greeting);
 
   const twiml = new twilio.twiml.VoiceResponse();
@@ -69,7 +78,7 @@ router.post('/twiml/connect', authMiddleware, (req, res) => {
 });
 
 // POST /api/calls/twiml/listen - TwiML: just listen (no greeting)
-router.post('/twiml/listen', authMiddleware, (req, res) => {
+router.post('/twiml/listen', (req, res) => {
   const baseUrl = process.env.BASE_URL;
   const twiml = new twilio.twiml.VoiceResponse();
   twiml.gather({
@@ -84,22 +93,25 @@ router.post('/twiml/listen', authMiddleware, (req, res) => {
   res.send(twiml.toString());
 });
 
-// POST /api/calls/gather - Twilio sends caller's speech, we call the LLM and respond
-router.post('/gather', authMiddleware, async (req, res) => {
+// POST /api/calls/gather - Twilio sends caller's speech
+// Flow: transcript → promptGuard → Groq → speak → listen
+router.post('/gather', async (req, res) => {
   const { CallSid, SpeechResult, Confidence } = req.body;
   const baseUrl = process.env.BASE_URL;
 
   const entry = callStore.get(CallSid);
 
   if (entry && SpeechResult) {
+    // Step 4: Read answerer transcript
     entry.addTranscript('caller', SpeechResult);
     console.log(`[caller] "${SpeechResult}" (confidence: ${Confidence})`);
 
-    // Check for prompt injection if guard is enabled
+    // Step 5: Send to promptGuard
     if (entry.guardEnabled) {
       const check = await checkInjection(SpeechResult);
       console.log(`[guard] label=${check.label} score=${check.score}`);
 
+      // Step 6-1: Injection detected — warn and hang up
       if (check.injection) {
         entry.addTranscript('assistant', 'Prompt injection detected. Ending call.');
         console.log('[guard] INJECTION DETECTED — ending call');
@@ -113,8 +125,11 @@ router.post('/gather', authMiddleware, async (req, res) => {
       }
     }
 
+    // Step 6-2: Clean — send to Groq (same session via entry.messages)
     try {
       const reply = await chatCompletion(entry.messages);
+
+      // Step 3 (loop): Send Groq response to answerer, then listen again
       entry.addTranscript('assistant', reply);
       console.log(`[assistant] "${reply}"`);
 
@@ -135,7 +150,7 @@ router.post('/gather', authMiddleware, async (req, res) => {
     }
   }
 
-  // Fallback: if LLM fails or no speech, keep listening
+  // Fallback: keep listening
   const twiml = new twilio.twiml.VoiceResponse();
   twiml.redirect(`${baseUrl}/api/calls/twiml/listen`);
 
@@ -144,7 +159,7 @@ router.post('/gather', authMiddleware, async (req, res) => {
 });
 
 // POST /api/calls/status - Twilio status callback
-router.post('/status', authMiddleware, (req, res) => {
+router.post('/status', (req, res) => {
   const { CallSid, CallStatus } = req.body;
   const entry = callStore.get(CallSid);
   if (entry) {
@@ -155,6 +170,8 @@ router.post('/status', authMiddleware, (req, res) => {
   }
   res.sendStatus(200);
 });
+
+// --- Authenticated endpoints ---
 
 // GET /api/calls/:callSid - Get call state and transcript
 router.get('/:callSid', authMiddleware, (req, res) => {
