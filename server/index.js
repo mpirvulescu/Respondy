@@ -4,7 +4,7 @@ import path from 'path';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
 import { WebSocketServer } from 'ws';
-import { router as apiRoutes } from './routes/api.js';
+import authRoutes from './routes/auth.js';
 import callRoutes from './routes/calls.js';
 import userCallRoutes from './routes/userCalls.js';
 import { callStore } from './callStore.js';
@@ -14,12 +14,12 @@ const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3001;
 let CLIENT_ORIGIN = process.env.CLIENT_ORIGIN;
-if(CLIENT_ORIGIN === undefined) {
+if (CLIENT_ORIGIN === undefined) {
   if (process.env.NODE_ENV === 'production') {
     throw new Error("CLIENT_ORIGIN environment variable is required in production");
   } else {
     console.warn("Warning: CLIENT_ORIGIN is not set. Using default origin for development.");
-    CLIENT_ORIGIN = `http://localhost:${PORT}`;
+    CLIENT_ORIGIN = `http://localhost:5173`; // Vite's default dev server port
   }
 }
 
@@ -29,8 +29,8 @@ app.use(express.urlencoded({ extended: false }));
 
 // API routes
 app.use('/api/user/calls', userCallRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/calls', callRoutes);
-app.use('/api', apiRoutes);
 
 // Serve React app in production
 if (process.env.NODE_ENV === 'production') {
