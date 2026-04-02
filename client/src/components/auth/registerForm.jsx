@@ -1,4 +1,4 @@
-import { useAuth }     from '../../context/AuthContext';
+import { useAuth }     from '../../context/authContext';
 import { useAuthForm } from '../../hooks/useAuthForm';
 
 const INITIAL = { name: '', email: '', password: '', confirm: '' };
