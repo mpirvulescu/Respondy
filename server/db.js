@@ -30,6 +30,13 @@ export async function getDb() {
       quota INTEGER NOT NULL DEFAULT 20,
       role TEXT NOT NULL DEFAULT 'user'
     );
+    CREATE TABLE IF NOT EXISTS password_resets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      token TEXT NOT NULL UNIQUE,
+      expires_at DATETIME NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
   `);
 
   saveDb();
