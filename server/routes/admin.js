@@ -1,0 +1,54 @@
+import express from 'express';
+import { authMiddleware } from '../middleware/auth.js';
+import { getDb } from '../db.js';
+
+const router = express.Router();
+
+function adminOnly(req, res, next) {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+  next();
+}
+
+// GET /api/admin/stats
+router.get('/stats', authMiddleware, adminOnly, async (req, res) => {
+  const db = await getDb();
+
+  const usersResult = db.exec(
+    'SELECT id, name, email, role, quota, 20 - quota AS api_calls_used FROM users'
+  );
+  const users = (usersResult[0]?.values || []).map((row) => ({
+    id: row[0],
+    name: row[1],
+    email: row[2],
+    role: row[3],
+    quota: row[4],
+    api_calls_used: row[5],
+  }));
+
+  const totalUsers = users.length;
+  const totalCalls = users.reduce((sum, u) => sum + u.api_calls_used, 0);
+
+  res.json({ totalUsers, totalCalls, callsByUser: users });
+});
+
+// GET /api/admin/injections
+router.get('/injections', authMiddleware, adminOnly, async (req, res) => {
+  const db = await getDb();
+  const result = db.exec(
+    'SELECT id, user_id, input_text, classification, score, created_at FROM injection_logs ORDER BY created_at DESC'
+  );
+  const logs = (result[0]?.values || []).map((row) => ({
+    id: row[0],
+    user_id: row[1],
+    input_text: row[2],
+    classification: row[3],
+    score: row[4],
+    created_at: row[5],
+  }));
+
+  res.json({ logs });
+});
+
+export default router;

@@ -111,8 +111,18 @@ router.post('/gather', async (req, res) => {
       const check = await checkInjection(SpeechResult);
       console.log(`[guard] label=${check.label} score=${check.score}`);
 
-      // Step 6-1: Injection detected — warn and hang up
+      // Step 6-1: Injection detected — log, warn, and hang up
       if (check.injection) {
+        try {
+          const db = await getDb();
+          db.run(
+            'INSERT INTO injection_logs (user_id, input_text, classification, score) VALUES (?, ?, ?, ?)',
+            [entry.userId || null, SpeechResult, check.label, check.score]
+          );
+          saveDb();
+        } catch (logErr) {
+          console.error('Failed to log injection:', logErr.message);
+        }
         entry.addTranscript('assistant', 'Prompt injection detected. Ending call.');
         console.log('[guard] INJECTION DETECTED — ending call');
 

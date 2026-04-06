@@ -1,3 +1,5 @@
+import { getDb, saveDb } from '../db.js';
+
 class PromptInjectionGuard {
   static instance = null;
 
@@ -31,6 +33,16 @@ export function promptGuard(fields = ['name']) {
       for (const text of textsToCheck) {
         const [result] = await classifier(text);
         if (result.label === 'INJECTION' && result.score > 0.9) {
+          try {
+            const db = await getDb();
+            db.run(
+              'INSERT INTO injection_logs (user_id, input_text, classification, score) VALUES (?, ?, ?, ?)',
+              [req.user?.id || null, text, result.label, result.score]
+            );
+            saveDb();
+          } catch (logErr) {
+            console.error('Failed to log injection:', logErr.message);
+          }
           return res.status(400).json({
             error: 'Potential prompt injection detected',
           });

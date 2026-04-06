@@ -49,7 +49,7 @@ router.post("/login", async (req, res) => {
   if (!valid) {
     return res.status(400).json({ message: "Incorrect email or password" });
   }
-  const user = { id: row[0], name: row[1], email: row[2] };
+  const user = { id: row[0], name: row[1], email: row[2], role: row[5] };
   const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "7d" });
   res.json({ user, token });
 });

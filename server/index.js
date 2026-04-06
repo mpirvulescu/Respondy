@@ -7,6 +7,7 @@ import { WebSocketServer } from 'ws';
 import authRoutes from './routes/auth.js';
 import callRoutes from './routes/calls.js';
 import userCallRoutes from './routes/userCalls.js';
+import adminRoutes from './routes/admin.js';
 import { authMiddleware } from './middleware/auth.js';
 import { callStore } from './callStore.js';
 import { getDb } from './db.js';
@@ -44,6 +45,7 @@ app.get('/api/user/calls', authMiddleware, async (req, res) => {
 
 app.use('/api/user/calls', userCallRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/calls', callRoutes);
 
 // Serve React app in production

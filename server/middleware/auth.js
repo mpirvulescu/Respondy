@@ -24,7 +24,7 @@ export async function authMiddleware(req, res, next) {
     const result = db.exec("SELECT * FROM users WHERE id = ?", [payload.id]);
     if (!result.length) return res.status(401).json({ message: "User not found" });
     const row = result[0].values[0];
-    const user = { id: row[0], name: row[1], email: row[2], quota: row[4] };
+    const user = { id: row[0], name: row[1], email: row[2], quota: row[4], role: row[5] };
     if (user.quota <= 0) {
       return res.status(429).json({ message: "API quota exceeded. Please contact support or wait for quota reset." });
     }

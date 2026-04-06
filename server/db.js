@@ -37,6 +37,15 @@ export async function getDb() {
       expires_at DATETIME NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id)
     );
+    CREATE TABLE IF NOT EXISTS injection_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      input_text TEXT NOT NULL,
+      classification TEXT,
+      score REAL,
+      created_at DATETIME DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
   `);
 
   saveDb();
