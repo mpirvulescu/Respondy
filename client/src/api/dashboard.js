@@ -85,3 +85,23 @@ export async function fetchInjectionLogs(token) {
   if (!res.ok) throw new Error(data.message || data.error || 'Failed to load injection logs');
   return data;
 }
+
+export async function fetchSystemPrompt(token) {
+  const res = await fetch(`${BASE_URL}/admin/system-prompt`, {
+    headers: authHeaders(token),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || data.error || 'Failed to load system prompt');
+  return data;
+}
+
+export async function updateSystemPrompt(token, systemPrompt) {
+  const res = await fetch(`${BASE_URL}/admin/system-prompt`, {
+    method: 'PUT',
+    headers: authHeaders(token),
+    body: JSON.stringify({ systemPrompt }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || data.error || 'Failed to update system prompt');
+  return data;
+}

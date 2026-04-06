@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth }                      from '../../context/authContext';
-import { fetchAdminStats, fetchInjectionLogs } from '../../api/dashboard';
+import { fetchAdminStats, fetchInjectionLogs, fetchSystemPrompt, updateSystemPrompt } from '../../api/dashboard';
 
 function StatusBadge({ status }) {
   const s = (status || 'pending').toLowerCase().replace(/\s+/g, '-');
@@ -17,6 +17,7 @@ const TABS = [
   { id: 'users',    label: 'Users',     icon: '\u{1F465}' },
   { id: 'calls',    label: 'Calls',     icon: '\u{1F4DE}' },
   { id: 'security', label: 'Security',  icon: '\u{1F6E1}\uFE0F' },
+  { id: 'settings', label: 'Settings',  icon: '\u{2699}\uFE0F' },
 ];
 
 export default function AdminDashboard() {
@@ -25,11 +26,30 @@ export default function AdminDashboard() {
   const [stats, setStats]           = useState({ totalUsers: 0, totalCalls: 0, callsByUser: [] });
   const [injections, setInjections] = useState([]);
   const [activeTab, setActiveTab]   = useState('overview');
+  const [promptText, setPromptText] = useState('');
+  const [promptSaved, setPromptSaved] = useState(false);
+  const [promptSaving, setPromptSaving] = useState(false);
 
   useEffect(() => {
     fetchAdminStats(token).then(setStats).catch(() => {});
     fetchInjectionLogs(token).then((d) => setInjections(d.logs ?? [])).catch(() => {});
+    fetchSystemPrompt(token).then((d) => setPromptText(d.systemPrompt ?? '')).catch(() => {});
   }, [token]);
+
+  const handleSavePrompt = async () => {
+    setPromptSaving(true);
+    setPromptSaved(false);
+    try {
+      const data = await updateSystemPrompt(token, promptText);
+      setPromptText(data.systemPrompt);
+      setPromptSaved(true);
+      setTimeout(() => setPromptSaved(false), 3000);
+    } catch {
+      // error handled silently
+    } finally {
+      setPromptSaving(false);
+    }
+  };
 
   const callCounts = useMemo(() => {
     const counts = { completed: 0, failed: 0, pending: 0, inProgress: 0, total: 0 };
@@ -256,7 +276,42 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* ── Security Tab ���─ */}
+        {/* ── Settings Tab ── */}
+        <div className={`tab-panel${activeTab === 'settings' ? ' tab-panel--active' : ''}`}>
+          <div className="card">
+            <div className="card__header">
+              <div className="card__title">System Prompt</div>
+            </div>
+            <div className="card__content">
+              <div className="form-group">
+                <label className="form-label">Prompt Template</label>
+                <textarea
+                  className="form-textarea"
+                  rows={10}
+                  value={promptText}
+                  onChange={(e) => setPromptText(e.target.value)}
+                />
+                <div className="form-helper">
+                  The user's call goal is automatically appended to this prompt for each call.
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+                <button
+                  className="btn btn--primary"
+                  onClick={handleSavePrompt}
+                  disabled={promptSaving}
+                >
+                  {promptSaving ? 'Saving...' : 'Save'}
+                </button>
+                {promptSaved && (
+                  <span style={{ color: 'var(--success, #22c55e)', fontSize: 14 }}>Saved successfully</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Security Tab ── */}
         <div className={`tab-panel${activeTab === 'security' ? ' tab-panel--active' : ''}`}>
           {injections.length === 0 ? (
             <div className="card">

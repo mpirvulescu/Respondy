@@ -2,6 +2,7 @@ import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
 import { getDb } from '../db.js';
 import { callStore } from '../callStore.js';
+import { getSystemPrompt, setSystemPrompt } from '../systemPrompt.js';
 
 const router = express.Router();
 
@@ -62,6 +63,21 @@ router.get('/injections', authMiddleware, adminOnly, async (req, res) => {
   }));
 
   res.json({ logs });
+});
+
+// GET /api/admin/system-prompt
+router.get('/system-prompt', authMiddleware, adminOnly, (req, res) => {
+  res.json({ systemPrompt: getSystemPrompt() });
+});
+
+// PUT /api/admin/system-prompt
+router.put('/system-prompt', authMiddleware, adminOnly, (req, res) => {
+  const { systemPrompt } = req.body;
+  if (typeof systemPrompt !== 'string' || !systemPrompt.trim()) {
+    return res.status(400).json({ message: 'systemPrompt is required' });
+  }
+  setSystemPrompt(systemPrompt.trim());
+  res.json({ systemPrompt: getSystemPrompt() });
 });
 
 export default router;

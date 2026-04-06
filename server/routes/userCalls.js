@@ -4,6 +4,7 @@ import { callStore } from '../callStore.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { chatCompletion } from '../llm.js';
 import { getDb, saveDb } from '../db.js';
+import { getSystemPrompt } from '../systemPrompt.js';
 
 const router = express.Router();
 
@@ -25,18 +26,7 @@ router.post('/', authMiddleware, async (req, res) => {
   const baseUrl = process.env.BASE_URL;
   if (!baseUrl) return res.status(500).json({ error: 'BASE_URL not configured' });
 
-  const systemPrompt = [
-    'You are a phone assistant on a live outbound call.',
-    'Your output is spoken aloud via TTS — no markdown, no lists, no formatting.',
-    '1-2 sentences max per turn.',
-    '',
-    `GOAL: ${goal}`,
-    '',
-    'Drive the conversation toward this goal.',
-    'Be persuasive yet firm — handle objections, redirect tangents, and do not give up easily.',
-    'Stay polite but persistent.',
-    'Your first message is the opening greeting.',
-  ].join('\n');
+  const systemPrompt = getSystemPrompt() + `\n\nGOAL: ${goal}`;
 
   try {
     // Step 1 & 2 in parallel: get Groq greeting + initiate Twilio call
