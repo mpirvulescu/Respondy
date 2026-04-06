@@ -37,6 +37,26 @@ export async function getDb() {
       expires_at DATETIME NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id)
     );
+    CREATE TABLE IF NOT EXISTS calls (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      call_sid TEXT NOT NULL UNIQUE,
+      user_id INTEGER,
+      phone_number TEXT,
+      goal TEXT,
+      status TEXT NOT NULL DEFAULT 'initiated',
+      guard_enabled INTEGER NOT NULL DEFAULT 0,
+      started_at DATETIME DEFAULT (datetime('now')),
+      ended_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+    CREATE TABLE IF NOT EXISTS transcripts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      call_sid TEXT NOT NULL,
+      role TEXT NOT NULL,
+      text TEXT NOT NULL,
+      created_at DATETIME DEFAULT (datetime('now')),
+      FOREIGN KEY (call_sid) REFERENCES calls(call_sid)
+    );
     CREATE TABLE IF NOT EXISTS injection_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER,

@@ -62,6 +62,8 @@ router.post('/', authMiddleware, async (req, res) => {
       guardEnabled: true,
       userId: req.user.id,
       greeting,
+      phoneNumber: to,
+      goal,
     });
 
     const db = await getDb();
@@ -81,19 +83,25 @@ router.post('/', authMiddleware, async (req, res) => {
 });
 
 // GET /api/user/calls/:callSid - Get call state (auth required, owner only)
-router.get('/:callSid', authMiddleware, (req, res) => {
+router.get('/:callSid', authMiddleware, async (req, res) => {
   const entry = callStore.get(req.params.callSid);
-  if (!entry) return res.status(404).json({ error: 'Call not found' });
-  if (entry.userId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+  if (entry) {
+    if (entry.userId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+    return res.json({
+      callSid: req.params.callSid,
+      status: entry.status,
+      transcript: entry.transcript,
+      guardEnabled: entry.guardEnabled,
+      startedAt: entry.startedAt,
+      endedAt: entry.endedAt,
+    });
+  }
 
-  res.json({
-    callSid: req.params.callSid,
-    status: entry.status,
-    transcript: entry.transcript,
-    guardEnabled: entry.guardEnabled,
-    startedAt: entry.startedAt,
-    endedAt: entry.endedAt,
-  });
+  const dbEntry = await callStore.getFromDb(req.params.callSid);
+  if (!dbEntry) return res.status(404).json({ error: 'Call not found' });
+  if (dbEntry.userId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+
+  res.json(dbEntry);
 });
 
 // POST /api/user/calls/:callSid/hangup - End the call (auth required, owner only)

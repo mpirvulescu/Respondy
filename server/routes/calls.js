@@ -38,6 +38,7 @@ router.post('/', authMiddleware, async (req, res) => {
       systemPrompt,
       greeting: greeting || 'Hello! How can I help you today?',
       userId: req.user.id,
+      phoneNumber: to,
     });
 
     const db = await getDb();
@@ -171,30 +172,30 @@ router.post('/gather', async (req, res) => {
 // POST /api/calls/status - Twilio status callback
 router.post('/status', (req, res) => {
   const { CallSid, CallStatus } = req.body;
-  const entry = callStore.get(CallSid);
-  if (entry) {
-    entry.status = CallStatus;
-    if (['completed', 'failed', 'canceled', 'no-answer', 'busy'].includes(CallStatus)) {
-      entry.endedAt = new Date().toISOString();
-    }
-  }
+  callStore.updateStatus(CallSid, CallStatus);
   res.sendStatus(200);
 });
 
 // --- Authenticated endpoints ---
 
 // GET /api/calls/:callSid - Get call state and transcript
-router.get('/:callSid', authMiddleware, (req, res) => {
+router.get('/:callSid', authMiddleware, async (req, res) => {
   const entry = callStore.get(req.params.callSid);
-  if (!entry) return res.status(404).json({ error: 'Call not found' });
+  if (entry) {
+    return res.json({
+      callSid: req.params.callSid,
+      status: entry.status,
+      transcript: entry.transcript,
+      startedAt: entry.startedAt,
+      endedAt: entry.endedAt,
+    });
+  }
 
-  res.json({
-    callSid: req.params.callSid,
-    status: entry.status,
-    transcript: entry.transcript,
-    startedAt: entry.startedAt,
-    endedAt: entry.endedAt,
-  });
+  // Fall back to DB for ended/past calls
+  const dbEntry = await callStore.getFromDb(req.params.callSid);
+  if (!dbEntry) return res.status(404).json({ error: 'Call not found' });
+
+  res.json(dbEntry);
 });
 
 // POST /api/calls/:callSid/say - Manually speak words (overrides LLM)

@@ -40,7 +40,8 @@ app.get('/api/user/stats', authMiddleware, async (req, res) => {
 });
 
 app.get('/api/user/calls', authMiddleware, async (req, res) => {
-  res.json({ calls: [] });
+  const calls = await callStore.listByUser(req.user.id);
+  res.json({ calls });
 });
 
 app.use('/api/user/calls', userCallRoutes);
