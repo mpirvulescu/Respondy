@@ -55,8 +55,8 @@ router.post("/login", async (req, res) => {
 });
 
 // POST /api/auth/logout
-// JWT is annoying to revoke, but we don't need to
-router.post("/logout", authMiddleware, (req, res) => {
+router.post("/logout", (req, res) => {
+  // JWT is annoying to revoke, but we don't need to
   res.json({ message: "Logged out" });
 });
 
