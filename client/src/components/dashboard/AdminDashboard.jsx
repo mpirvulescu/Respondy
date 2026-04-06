@@ -73,22 +73,18 @@ export default function AdminDashboard() {
         {/* ── Stats Grid (4 cards) ── */}
         <div className="stats-grid stats-grid--4col section">
           <div className="card stat-card">
-            <div className="stat-card__icon stat-card__icon--purple">&#128101;</div>
             <div className="stat-card__value">{stats.totalUsers}</div>
             <div className="stat-card__label">Total Users</div>
           </div>
           <div className="card stat-card">
-            <div className="stat-card__icon stat-card__icon--blue">&#9889;</div>
             <div className="stat-card__value">{stats.totalCalls}</div>
             <div className="stat-card__label">Total Calls</div>
           </div>
           <div className="card stat-card">
-            <div className="stat-card__icon stat-card__icon--green">&#10004;&#65039;</div>
             <div className="stat-card__value">{callCounts.completed}</div>
             <div className="stat-card__label">Completed</div>
           </div>
           <div className="card stat-card">
-            <div className="stat-card__icon stat-card__icon--red">&#128737;&#65039;</div>
             <div className="stat-card__value">{injections.length}</div>
             <div className="stat-card__label">Injections Blocked</div>
           </div>
@@ -148,14 +144,12 @@ export default function AdminDashboard() {
               </div>
               <div className="card__content" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div className="alert alert--danger">
-                  <span className="alert__icon">&#9888;&#65039;</span>
                   <div className="alert__text">
                     <div className="alert__title">{injections.length} Injection Attempt{injections.length !== 1 ? 's' : ''}</div>
                     <div className="alert__description">All attempts have been logged and blocked</div>
                   </div>
                 </div>
                 <div className="alert alert--success">
-                  <span className="alert__icon">&#128737;&#65039;</span>
                   <div className="alert__text">
                     <div className="alert__title">Prompt Guard Active</div>
                     <div className="alert__description">ProtectAI/deberta-v3-base-prompt-injection-v2</div>
@@ -172,7 +166,6 @@ export default function AdminDashboard() {
             <div className="card__content--flush">
               {stats.callsByUser.length === 0 ? (
                 <div className="empty-state">
-                  <div className="empty-state__icon">&#128101;</div>
                   <div className="empty-state__title">No users yet</div>
                 </div>
               ) : (
@@ -226,7 +219,6 @@ export default function AdminDashboard() {
             <div className="card__content--flush">
               {allCalls.length === 0 ? (
                 <div className="empty-state">
-                  <div className="empty-state__icon">&#128222;</div>
                   <div className="empty-state__title">No calls recorded</div>
                   <div className="empty-state__text">Calls will appear here once users start making them</div>
                 </div>
@@ -265,7 +257,6 @@ export default function AdminDashboard() {
           {injections.length === 0 ? (
             <div className="card">
               <div className="empty-state" style={{ padding: '60px 20px' }}>
-                <div className="empty-state__icon" style={{ color: '#22c55e' }}>&#128737;&#65039;</div>
                 <div className="empty-state__title">No injection attempts detected</div>
                 <div className="empty-state__text">The platform is clean.</div>
               </div>
