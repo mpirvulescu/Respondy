@@ -104,7 +104,7 @@ router.post('/twiml/listen', (req, res) => {
 });
 
 // POST /api/calls/gather - Twilio sends caller's speech
-// Flow: transcript → promptGuard → Groq → speak → listen
+// Flow: transcript -> promptGuard -> Groq -> speak -> listen
 router.post('/gather', async (req, res) => {
    const {CallSid, SpeechResult, Confidence} = req.body;
    const baseUrl = process.env.BASE_URL;

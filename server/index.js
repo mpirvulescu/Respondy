@@ -10,7 +10,6 @@ import userCallRoutes from './routes/userCalls.js';
 import adminRoutes from './routes/admin.js';
 import {authMiddleware} from './middleware/auth.js';
 import {callStore} from './callStore.js';
-import {getDb} from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
