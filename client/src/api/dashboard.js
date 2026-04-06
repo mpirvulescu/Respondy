@@ -1,8 +1,8 @@
 // ============================================================
 // src/api/dashboard.js
-// Dashboard HTTP calls — mirrors the style of api/auth.js.
+// Dashboard HTTP calls - mirrors the style of api/auth.js.
 //
-// Backend dev — implement these endpoints:
+// Backend dev - implement these endpoints:
 //
 //   GET /api/user/stats
 //     Headers: Authorization: Bearer <token>
@@ -35,7 +35,7 @@ function authHeaders(token) {
    };
 }
 
-// ── User endpoints ──────────────────────────────────────────
+// -- User endpoints ------------------------------------------
 
 export async function fetchUserStats(token) {
    const res = await fetch(`${BASE_URL}/user/stats`, {
@@ -69,7 +69,7 @@ export async function initiateCall(token, {to, goal}) {
    return data;
 }
 
-// ── Admin endpoints ─────────────────────────────────────────
+// -- Admin endpoints -----------------------------------------
 
 export async function fetchAdminStats(token) {
    const res = await fetch(`${BASE_URL}/admin/stats`, {

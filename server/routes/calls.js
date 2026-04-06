@@ -60,7 +60,7 @@ router.post('/', authMiddleware, async (req, res) => {
    }
 });
 
-// --- Twilio webhooks (NO auth — called by Twilio servers) ---
+// --- Twilio webhooks (NO auth - called by Twilio servers) ---
 
 // POST /api/calls/twiml/connect - TwiML: greet then listen
 router.post('/twiml/connect', (req, res) => {
@@ -121,7 +121,7 @@ router.post('/gather', async (req, res) => {
          const check = await checkInjection(SpeechResult);
          console.log(`[guard] label=${check.label} score=${check.score}`);
 
-         // Step 6-1: Injection detected — log, warn, and hang up
+         // Step 6-1: Injection detected - log, warn, and hang up
          if (check.injection) {
             try {
                const db = await getDb();
@@ -142,7 +142,7 @@ router.post('/gather', async (req, res) => {
                'assistant',
                'Prompt injection detected. Ending call.',
             );
-            console.log('[guard] INJECTION DETECTED — ending call');
+            console.log('[guard] INJECTION DETECTED - ending call');
 
             const twiml = new twilio.twiml.VoiceResponse();
             twiml.say(
@@ -156,7 +156,7 @@ router.post('/gather', async (req, res) => {
          }
       }
 
-      // Step 6-2: Clean — send to Groq (same session via entry.messages)
+      // Step 6-2: Clean - send to Groq (same session via entry.messages)
       try {
          const reply = await chatCompletion(entry.messages);
 

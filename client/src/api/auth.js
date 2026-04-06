@@ -2,7 +2,7 @@
 // src/api/auth.js
 // All auth HTTP calls live here.
 //
-// Backend dev — implement these 3 endpoints:
+// Backend dev - implement these 3 endpoints:
 //
 //   POST /api/auth/register
 //     Body:    { name, email, password }

@@ -109,7 +109,7 @@ router.post('/forgot-password', async (req, res) => {
    try {
       await sendMail({
          to: email,
-         subject: 'Password Reset — Respondy',
+         subject: 'Password Reset from Respondy',
          text: `Reset your password: ${resetUrl}\n\nThis link expires in 1 hour. If you didn't request this, ignore this email.`,
          html: [
             `<p>Click the link below to reset your password:</p>`,
