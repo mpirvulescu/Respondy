@@ -163,7 +163,6 @@ export default function UserDashboard() {
           <div className="card">
             <div className="card__header">
               <div className="card__title">
-                <span className="card__title-icon">&#9889;</span>
                 API Usage
                 <span className={`card__title-right${exhausted ? ' status-badge--failed' : ''}`}>
                   {stats.apiCallsUsed} / {stats.apiCallsLimit}
@@ -189,7 +188,6 @@ export default function UserDashboard() {
           <div className="card">
             <div className="card__header">
               <div className="card__title">
-                <span className="card__title-icon">&#128222;</span>
                 Call Summary
               </div>
             </div>
@@ -271,7 +269,7 @@ export default function UserDashboard() {
                     rows={3}
                   />
                   <span className="form-helper">
-                    &#128737;&#65039; Your goal is screened for prompt injection before the call begins.
+                    Your goal is screened for prompt injection before the call begins.
                   </span>
                 </div>
                 <button className="btn btn--primary" type="submit" disabled={loading} style={{ width: '100%' }}>
@@ -286,7 +284,6 @@ export default function UserDashboard() {
         <div className="card section">
           <div className="card__header card__header--with-border">
             <div className="card__title">
-              <span className="card__title-icon">&#128336;</span>
               Call History
             </div>
             <p className="card__description">Review your past calls and transcripts</p>
