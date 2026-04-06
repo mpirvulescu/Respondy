@@ -1,6 +1,7 @@
 import express from 'express';
 import { authMiddleware } from '../middleware/auth.js';
 import { getDb } from '../db.js';
+import { callStore } from '../callStore.js';
 
 const router = express.Router();
 
@@ -27,10 +28,22 @@ router.get('/stats', authMiddleware, adminOnly, async (req, res) => {
     api_calls_used: row[5],
   }));
 
+  // Attach calls per user
+  for (const u of users) {
+    u.calls = await callStore.listByUser(u.id);
+  }
+
+  const allCalls = await callStore.listAll();
   const totalUsers = users.length;
-  const totalCalls = users.reduce((sum, u) => sum + u.api_calls_used, 0);
+  const totalCalls = allCalls.length;
 
   res.json({ totalUsers, totalCalls, callsByUser: users });
+});
+
+// GET /api/admin/calls - All calls with transcripts
+router.get('/calls', authMiddleware, adminOnly, async (req, res) => {
+  const calls = await callStore.listAll();
+  res.json({ calls });
 });
 
 // GET /api/admin/injections
