@@ -51,7 +51,10 @@ router.get('/calls', authMiddleware, adminOnly, async (req, res) => {
 router.get('/injections', authMiddleware, adminOnly, async (req, res) => {
    const db = await getDb();
    const result = db.exec(
-      'SELECT id, user_id, input_text, classification, score, created_at FROM injection_logs ORDER BY created_at DESC',
+      `SELECT i.id, i.user_id, i.input_text, i.classification, i.score, i.created_at, u.name
+       FROM injection_logs i
+       LEFT JOIN users u ON u.id = i.user_id
+       ORDER BY i.created_at DESC`,
    );
    const logs = (result[0]?.values || []).map((row) => ({
       id: row[0],
@@ -60,7 +63,19 @@ router.get('/injections', authMiddleware, adminOnly, async (req, res) => {
       classification: row[3],
       score: row[4],
       created_at: row[5],
+      user_name: row[6],
    }));
+
+   // Attach the phone number from the most recent call for each log
+   for (const log of logs) {
+      if (log.user_id) {
+         const callResult = db.exec(
+            'SELECT phone_number FROM calls WHERE user_id = ? AND started_at <= ? ORDER BY started_at DESC LIMIT 1',
+            [log.user_id, log.created_at],
+         );
+         log.phone_number = callResult[0]?.values?.[0]?.[0] || null;
+      }
+   }
 
    res.json({logs});
 });

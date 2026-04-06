@@ -572,8 +572,9 @@ export default function AdminDashboard() {
                               {log.input_text}
                            </div>
                            <div className='injection-card__meta'>
-                              User #{log.user_id} &middot;{' '}
-                              {new Date(log.created_at).toLocaleString()}
+                              {log.user_name || `User #${log.user_id}`}
+                              {log.phone_number && <> &middot; {log.phone_number}</>}
+                              {' '}&middot; {new Date(log.created_at).toLocaleString()}
                            </div>
                         </div>
                      ))}
