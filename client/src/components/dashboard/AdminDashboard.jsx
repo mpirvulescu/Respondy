@@ -21,6 +21,67 @@ function RoleBadge({role}) {
    return <span className={`badge--role badge--role-${r}`}>{r}</span>;
 }
 
+function CallDetailModal({call, onClose}) {
+   if (!call) return null;
+   const lines = [];
+   if (call.transcript) {
+      const raw = call.transcript.trim();
+      const parts = raw.split(/\n/);
+      for (const line of parts) {
+         const match = line.match(/^(agent|callee|assistant|user|caller):\s*/i);
+         if (match) {
+            const role = match[1].toLowerCase();
+            const isAgent = role === 'agent' || role === 'assistant';
+            lines.push({ role: isAgent ? 'agent' : 'callee', text: line.slice(match[0].length) });
+         } else if (lines.length > 0) {
+            lines[lines.length - 1].text += '\n' + line;
+         } else {
+            lines.push({ role: 'agent', text: line });
+         }
+      }
+   }
+   return (
+      <div className='modal-overlay' onClick={onClose}>
+         <div className='modal-content' onClick={(e) => e.stopPropagation()}>
+            <div className='modal-header'>
+               <div className='modal-header__info'>
+                  <div className='modal-title'><span>&#128222;</span> Call Details</div>
+                  <div className='modal-subtitle'>
+                     {call.phone_number}
+                     {call.created_at && <> &middot; {new Date(call.created_at).toLocaleString()}</>}
+                     {call.userName && <> &middot; {call.userName}</>}
+                  </div>
+               </div>
+               <button className='modal-close' onClick={onClose}>&times;</button>
+            </div>
+            <div className='modal-body'>
+               <div>
+                  <div className='modal-section__label'>Status</div>
+                  <StatusBadge status={call.status} />
+               </div>
+               <div>
+                  <div className='modal-section__label'>Goal</div>
+                  <div className='modal-section__text'>{call.goal || 'N/A'}</div>
+               </div>
+               {lines.length > 0 && (
+                  <div>
+                     <div className='modal-section__label'>Transcript</div>
+                     <div className='transcript'>
+                        {lines.map((msg, i) => (
+                           <div key={i} className={`transcript__msg transcript__msg--${msg.role}`}>
+                              <div className='transcript__msg-label'>{msg.role === 'agent' ? 'Agent' : 'Callee'}</div>
+                              {msg.text}
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+               )}
+            </div>
+         </div>
+      </div>
+   );
+}
+
 const TABS = [
    {id: 'overview', label: 'Overview', icon: '\u{1F4CA}'},
    {id: 'users', label: 'Users', icon: '\u{1F465}'},
@@ -56,6 +117,7 @@ export default function AdminDashboard() {
       promptSaving,
       setPromptSaving,
    ] = useState(false);
+   const [selectedCall, setSelectedCall] = useState(null);
 
    useEffect(() => {
       fetchAdminStats(token)
@@ -381,7 +443,7 @@ export default function AdminDashboard() {
                               </thead>
                               <tbody>
                                  {allCalls.map((c, i) => (
-                                    <tr key={c.id || i}>
+                                    <tr key={c.id || i} style={{cursor: 'pointer'}} onClick={() => setSelectedCall(c)}>
                                        <td>{c.phone_number || c.to || '—'}</td>
                                        <td className='table__cell--wrap'>
                                           {c.goal || '—'}
@@ -519,6 +581,13 @@ export default function AdminDashboard() {
                )}
             </div>
          </div>
+
+         {selectedCall && (
+            <CallDetailModal
+               call={selectedCall}
+               onClose={() => setSelectedCall(null)}
+            />
+         )}
       </>
    );
 }
