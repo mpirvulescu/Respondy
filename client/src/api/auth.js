@@ -55,6 +55,17 @@ export async function forgotPassword(email) {
   return data;
 }
 
+export async function resetPassword(token, password) {
+  const res = await fetch(`${BASE_URL}/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Reset failed');
+  return data;
+}
+
 export async function logoutUser(token) {
   const res = await fetch(`${BASE_URL}/logout`, {
     method: 'POST',
