@@ -44,6 +44,17 @@ export async function loginUser({ email, password }) {
   return data; // { user, token }
 }
  
+export async function forgotPassword(email) {
+  const res = await fetch(`${BASE_URL}/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Request failed');
+  return data;
+}
+
 export async function logoutUser(token) {
   const res = await fetch(`${BASE_URL}/logout`, {
     method: 'POST',

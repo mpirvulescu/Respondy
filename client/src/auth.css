@@ -153,3 +153,26 @@ body {
 
 .auth-form__submit:hover:not(:disabled) { background: var(--primary-hover); }
 .auth-form__submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.auth-form__success {
+  font-size: 13px;
+  color: #22c55e;
+  background: #0d2818;
+  border: 1px solid #1a4a2a;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+
+.auth-form__link {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 0;
+  text-align: center;
+  transition: color 0.2s;
+}
+.auth-form__link:hover { color: var(--primary); }
+.auth-form__link:disabled { opacity: 0.5; cursor: not-allowed; }
