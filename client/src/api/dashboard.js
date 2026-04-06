@@ -42,7 +42,7 @@ export async function fetchUserStats(token) {
     headers: authHeaders(token),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Failed to load stats');
+  if (!res.ok) throw new Error(data.message || data.error || 'Failed to load stats');
   return data;
 }
 
@@ -51,7 +51,7 @@ export async function fetchUserCalls(token) {
     headers: authHeaders(token),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Failed to load calls');
+  if (!res.ok) throw new Error(data.message || data.error || 'Failed to load calls');
   return data;
 }
 
@@ -62,7 +62,7 @@ export async function initiateCall(token, { to, goal }) {
     body: JSON.stringify({ to, goal }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Failed to initiate call');
+  if (!res.ok) throw new Error(data.message || data.error || 'Failed to initiate call');
   return data;
 }
 
@@ -73,7 +73,7 @@ export async function fetchAdminStats(token) {
     headers: authHeaders(token),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Failed to load admin stats');
+  if (!res.ok) throw new Error(data.message || data.error || 'Failed to load admin stats');
   return data;
 }
 
@@ -82,6 +82,6 @@ export async function fetchInjectionLogs(token) {
     headers: authHeaders(token),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Failed to load injection logs');
+  if (!res.ok) throw new Error(data.message || data.error || 'Failed to load injection logs');
   return data;
 }

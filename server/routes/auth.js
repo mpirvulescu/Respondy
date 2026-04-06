@@ -26,8 +26,8 @@ router.post("/register", async (req, res) => {
     "INSERT INTO users (name, email, password, quota) VALUES (?, ?, ?, ?)",
     [name, email, hash, INITIAL_QUOTA]
   );
-  saveDb();
   const id = db.exec("SELECT last_insert_rowid()")[0].values[0][0];
+  saveDb();
   const user = { id, name, email };
   const token = jwt.sign({ id }, JWT_SECRET, { expiresIn: "7d" });
   res.status(201).json({ user, token });

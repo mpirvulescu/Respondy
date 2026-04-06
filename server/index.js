@@ -7,7 +7,9 @@ import { WebSocketServer } from 'ws';
 import authRoutes from './routes/auth.js';
 import callRoutes from './routes/calls.js';
 import userCallRoutes from './routes/userCalls.js';
+import { authMiddleware } from './middleware/auth.js';
 import { callStore } from './callStore.js';
+import { getDb } from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -28,6 +30,18 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // API routes
+app.get('/api/user/stats', authMiddleware, async (req, res) => {
+  const INITIAL_QUOTA = 20;
+  res.json({
+    apiCallsUsed: INITIAL_QUOTA - req.user.quota,
+    apiCallsLimit: INITIAL_QUOTA,
+  });
+});
+
+app.get('/api/user/calls', authMiddleware, async (req, res) => {
+  res.json({ calls: [] });
+});
+
 app.use('/api/user/calls', userCallRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/calls', callRoutes);
