@@ -122,7 +122,11 @@ export default function UserDashboard() {
     setError('');
     try {
       const data = await initiateCall(token, { to, goal });
-      setCalls((prev) => [data, ...prev]);
+      setCalls((prev) => [{
+        ...data,
+        phone_number: to,
+        created_at: new Date().toISOString(),
+      }, ...prev]);
       setStats((prev) => ({ ...prev, apiCallsUsed: prev.apiCallsUsed + 1 }));
       setTo('');
       setGoal('');
