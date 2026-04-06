@@ -32,16 +32,16 @@ POST /api/user/calls
 
 ## Stack
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | React, Vite |
-| Backend | Node.js, Express |
-| Database | SQLite (sql.js) |
-| LLM | Groq (Llama 3.3 70B) |
-| Telephony | Twilio Voice |
+| Layer        | Technology                                                  |
+| ------------ | ----------------------------------------------------------- |
+| Frontend     | React, Vite                                                 |
+| Backend      | Node.js, Express                                            |
+| Database     | SQLite (sql.js)                                             |
+| LLM          | Groq (Llama 3.3 70B)                                        |
+| Telephony    | Twilio Voice                                                |
 | Prompt Guard | ProtectAI/deberta-v3-base-prompt-injection-v2 (ONNX, local) |
-| Real-time | WebSocket (transcript streaming) |
-| Auth | JWT + bcrypt |
+| Real-time    | WebSocket (transcript streaming)                            |
+| Auth         | JWT + bcrypt                                                |
 
 ## Project Structure
 

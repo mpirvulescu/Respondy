@@ -29,79 +29,94 @@
 const BASE_URL = '/api';
 
 function authHeaders(token) {
-  return {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  };
+   return {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+   };
 }
 
 // ── User endpoints ──────────────────────────────────────────
 
 export async function fetchUserStats(token) {
-  const res = await fetch(`${BASE_URL}/user/stats`, {
-    headers: authHeaders(token),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || data.error || 'Failed to load stats');
-  return data;
+   const res = await fetch(`${BASE_URL}/user/stats`, {
+      headers: authHeaders(token),
+   });
+   const data = await res.json();
+   if (!res.ok)
+      throw new Error(data.message || data.error || 'Failed to load stats');
+   return data;
 }
 
 export async function fetchUserCalls(token) {
-  const res = await fetch(`${BASE_URL}/user/calls`, {
-    headers: authHeaders(token),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || data.error || 'Failed to load calls');
-  return data;
+   const res = await fetch(`${BASE_URL}/user/calls`, {
+      headers: authHeaders(token),
+   });
+   const data = await res.json();
+   if (!res.ok)
+      throw new Error(data.message || data.error || 'Failed to load calls');
+   return data;
 }
 
-export async function initiateCall(token, { to, goal }) {
-  const res = await fetch(`${BASE_URL}/user/calls`, {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify({ to, goal }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || data.error || 'Failed to initiate call');
-  return data;
+export async function initiateCall(token, {to, goal}) {
+   const res = await fetch(`${BASE_URL}/user/calls`, {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({to, goal}),
+   });
+   const data = await res.json();
+   if (!res.ok)
+      throw new Error(data.message || data.error || 'Failed to initiate call');
+   return data;
 }
 
 // ── Admin endpoints ─────────────────────────────────────────
 
 export async function fetchAdminStats(token) {
-  const res = await fetch(`${BASE_URL}/admin/stats`, {
-    headers: authHeaders(token),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || data.error || 'Failed to load admin stats');
-  return data;
+   const res = await fetch(`${BASE_URL}/admin/stats`, {
+      headers: authHeaders(token),
+   });
+   const data = await res.json();
+   if (!res.ok)
+      throw new Error(
+         data.message || data.error || 'Failed to load admin stats',
+      );
+   return data;
 }
 
 export async function fetchInjectionLogs(token) {
-  const res = await fetch(`${BASE_URL}/admin/injections`, {
-    headers: authHeaders(token),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || data.error || 'Failed to load injection logs');
-  return data;
+   const res = await fetch(`${BASE_URL}/admin/injections`, {
+      headers: authHeaders(token),
+   });
+   const data = await res.json();
+   if (!res.ok)
+      throw new Error(
+         data.message || data.error || 'Failed to load injection logs',
+      );
+   return data;
 }
 
 export async function fetchSystemPrompt(token) {
-  const res = await fetch(`${BASE_URL}/admin/system-prompt`, {
-    headers: authHeaders(token),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || data.error || 'Failed to load system prompt');
-  return data;
+   const res = await fetch(`${BASE_URL}/admin/system-prompt`, {
+      headers: authHeaders(token),
+   });
+   const data = await res.json();
+   if (!res.ok)
+      throw new Error(
+         data.message || data.error || 'Failed to load system prompt',
+      );
+   return data;
 }
 
 export async function updateSystemPrompt(token, systemPrompt) {
-  const res = await fetch(`${BASE_URL}/admin/system-prompt`, {
-    method: 'PUT',
-    headers: authHeaders(token),
-    body: JSON.stringify({ systemPrompt }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || data.error || 'Failed to update system prompt');
-  return data;
+   const res = await fetch(`${BASE_URL}/admin/system-prompt`, {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify({systemPrompt}),
+   });
+   const data = await res.json();
+   if (!res.ok)
+      throw new Error(
+         data.message || data.error || 'Failed to update system prompt',
+      );
+   return data;
 }
