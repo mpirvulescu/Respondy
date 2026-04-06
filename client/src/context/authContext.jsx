@@ -4,11 +4,14 @@ import { loginUser, registerUser, logoutUser } from '../api/auth';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser]   = useState(null);
+  const [user, setUser]   = useState(() => {
+    try { return JSON.parse(localStorage.getItem('auth_user')); } catch { return null; }
+  });
   const [token, setToken] = useState(() => localStorage.getItem('auth_token'));
 
   const saveSession = useCallback(({ user, token }) => {
     localStorage.setItem('auth_token', token);
+    localStorage.setItem('auth_user', JSON.stringify(user));
     setToken(token);
     setUser(user);
   }, []);
@@ -28,6 +31,7 @@ export function AuthProvider({ children }) {
   const logout = useCallback(async () => {
     if (token) await logoutUser(token).catch(() => {});
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
     setToken(null);
     setUser(null);
   }, [token]);

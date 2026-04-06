@@ -33,12 +33,16 @@ export default function AdminDashboard() {
 
   const callCounts = useMemo(() => {
     const counts = { completed: 0, failed: 0, pending: 0, inProgress: 0, total: 0 };
-    if (stats.callsByUser) {
-      for (const u of stats.callsByUser) {
-        counts.total += u.api_calls_used || 0;
-      }
+    const all = stats.callsByUser?.flatMap((u) => u.calls || []) || [];
+    for (const c of all) {
+      const s = (c.status || '').toLowerCase();
+      if (s === 'completed')                                                            counts.completed++;
+      else if (s === 'failed' || s === 'canceled' || s === 'busy' || s === 'no-answer') counts.failed++;
+      else if (s === 'in-progress' || s === 'ringing')                                  counts.inProgress++;
+      else                                                                              counts.pending++;
+      counts.total++;
     }
-    counts.total = stats.totalCalls || counts.total;
+    if (counts.total === 0) counts.total = stats.totalCalls || 0;
     return counts;
   }, [stats]);
 
