@@ -120,15 +120,20 @@ export default function AdminDashboard() {
    const [selectedCall, setSelectedCall] = useState(null);
 
    useEffect(() => {
-      fetchAdminStats(token)
-         .then(setStats)
-         .catch(() => {});
-      fetchInjectionLogs(token)
-         .then((d) => setInjections(d.logs ?? []))
-         .catch(() => {});
+      const loadData = () => {
+         fetchAdminStats(token)
+            .then(setStats)
+            .catch(() => {});
+         fetchInjectionLogs(token)
+            .then((d) => setInjections(d.logs ?? []))
+            .catch(() => {});
+      };
+      loadData();
       fetchSystemPrompt(token)
          .then((d) => setPromptText(d.systemPrompt ?? ''))
          .catch(() => {});
+      const interval = setInterval(loadData, 5000);
+      return () => clearInterval(interval);
    }, [
       token,
    ]);

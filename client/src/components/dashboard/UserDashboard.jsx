@@ -133,10 +133,15 @@ export default function UserDashboard() {
       const handleAuthError = (err) => {
          if (err.message === 'User not found') logout();
       };
-      fetchUserStats(token).then(setStats).catch(handleAuthError);
-      fetchUserCalls(token)
-         .then((d) => setCalls(d.calls ?? []))
-         .catch(handleAuthError);
+      const loadData = () => {
+         fetchUserStats(token).then(setStats).catch(handleAuthError);
+         fetchUserCalls(token)
+            .then((d) => setCalls(d.calls ?? []))
+            .catch(handleAuthError);
+      };
+      loadData();
+      const interval = setInterval(loadData, 5000);
+      return () => clearInterval(interval);
    }, [
       token,
       logout,
