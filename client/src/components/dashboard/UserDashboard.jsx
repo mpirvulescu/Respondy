@@ -125,9 +125,14 @@ export default function UserDashboard() {
       setLoading,
    ] = useState(false);
    const [
-      selectedCall,
-      setSelectedCall,
+      selectedCallId,
+      setSelectedCallId,
    ] = useState(null);
+
+   const selectedCall = useMemo(
+      () => calls.find((c) => (c.id || c.callSid) === selectedCallId) || null,
+      [calls, selectedCallId],
+   );
 
    useEffect(() => {
       const handleAuthError = (err) => {
@@ -140,7 +145,7 @@ export default function UserDashboard() {
             .catch(handleAuthError);
       };
       loadData();
-      const interval = setInterval(loadData, 5000);
+      const interval = setInterval(loadData, 1000);
       return () => clearInterval(interval);
    }, [
       token,
@@ -403,7 +408,7 @@ export default function UserDashboard() {
                            <li
                               key={c.id || c.callSid}
                               className='call-row'
-                              onClick={() => setSelectedCall(c)}
+                              onClick={() => setSelectedCallId(c.id || c.callSid)}
                            >
                               <div className='call-row__left'>
                                  <div className='call-row__icon'>&#128222;</div>
@@ -438,7 +443,7 @@ export default function UserDashboard() {
          {selectedCall && (
             <CallDetailModal
                call={selectedCall}
-               onClose={() => setSelectedCall(null)}
+               onClose={() => setSelectedCallId(null)}
             />
          )}
       </>

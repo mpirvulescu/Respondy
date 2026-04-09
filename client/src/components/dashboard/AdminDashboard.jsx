@@ -117,7 +117,7 @@ export default function AdminDashboard() {
       promptSaving,
       setPromptSaving,
    ] = useState(false);
-   const [selectedCall, setSelectedCall] = useState(null);
+   const [selectedCallId, setSelectedCallId] = useState(null);
 
    useEffect(() => {
       const loadData = () => {
@@ -132,7 +132,7 @@ export default function AdminDashboard() {
       fetchSystemPrompt(token)
          .then((d) => setPromptText(d.systemPrompt ?? ''))
          .catch(() => {});
-      const interval = setInterval(loadData, 5000);
+      const interval = setInterval(loadData, 1000);
       return () => clearInterval(interval);
    }, [
       token,
@@ -195,6 +195,11 @@ export default function AdminDashboard() {
    }, [
       stats,
    ]);
+
+   const selectedCall = useMemo(
+      () => allCalls.find((c) => (c.id || c.call_sid) === selectedCallId) || null,
+      [allCalls, selectedCallId],
+   );
 
    return (
       <>
@@ -448,7 +453,7 @@ export default function AdminDashboard() {
                               </thead>
                               <tbody>
                                  {allCalls.map((c, i) => (
-                                    <tr key={c.id || i} style={{cursor: 'pointer'}} onClick={() => setSelectedCall(c)}>
+                                    <tr key={c.id || i} style={{cursor: 'pointer'}} onClick={() => setSelectedCallId(c.id || c.call_sid)}>
                                        <td>{c.phone_number || c.to || '—'}</td>
                                        <td className='table__cell--wrap'>
                                           {c.goal || '—'}
@@ -591,7 +596,7 @@ export default function AdminDashboard() {
          {selectedCall && (
             <CallDetailModal
                call={selectedCall}
-               onClose={() => setSelectedCall(null)}
+               onClose={() => setSelectedCallId(null)}
             />
          )}
       </>
